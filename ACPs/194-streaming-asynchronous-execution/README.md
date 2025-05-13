@@ -44,6 +44,12 @@ This ACP does not introduce these, but some form of asynchronous execution is re
 
 In standard, synchronous, execution a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is _executed_. After _execution_, the block is _accepted_ by consensus. The act of _accepting_ a block immediately _settles_ all transactions in the block by including the transaction execution results.
 
+```mermaid
+flowchart LR
+    I[Proposed] --> E[Executed]
+    E --> A[Accepted and Settled]
+```
+
 Under SAE, a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is verified that later _execution_ will succeed. The block is then _accepted_ by consensus. The act of _accepting_ a block _enqueues_ the block to be _executed_. After the block is _executed_, a following block will reference the execution results and _settle_ all transactions in now _executed_ block.
 
 ```mermaid
