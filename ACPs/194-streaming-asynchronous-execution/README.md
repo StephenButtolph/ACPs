@@ -144,7 +144,7 @@ g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)
 $$
 
 > [!NOTE]
-> $\frac{g_L}{\lambda}$ is rounded up by actually calculating $\frac{g_L + \lambda - 1}{\lambda}$
+> $\dfrac{g_L}{\lambda}$ is rounded up by actually calculating $\dfrac{g_L + \lambda - 1}{\lambda}$
 
 where $\lambda$ enforces a lower bound on the gas charged based on the gas limit.
 
