@@ -122,12 +122,12 @@ ACP-103 introduced the following variables for calculating the gas price:
 
 ACP-176 provided a mechanism to make $T$ dynamic and set:
 
-```math
+$$
 \begin{align}
 R &= 2 \cdot T \\
 K &= 87 \cdot T
 \end{align}
-```
+$$
 
 The _excess_ actual consumption $x \ge 0$ beyond the target $T$ is tracked via numerical integration and used to calculate the gas price as:
 
