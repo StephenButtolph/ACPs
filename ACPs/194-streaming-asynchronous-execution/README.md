@@ -162,6 +162,37 @@ $$
 
 Any block that could cause the total sum of gas limits for transactions in the execution queue to exceed $\omega$ MUST be considered invalid.
 
+### Block executor
+
+During the activation of SAE, the block executor's timestamp, $t_e$, is initialised to the timestamp of the last accepted block.
+
+Prior to executing a block which includes timestamp $t_b$, the executor's timestamp and excess is updated:
+
+$$
+\begin{align}
+\Delta{t} &~:= \max\left(t_e, t_b\right) - t_e \\
+t_e &~:= t_e + \Delta{t} \\
+x &~:= \max\left(x - T \cdot \Delta{t}, 0\right) \\
+\end{align}
+$$
+
+The block is then executed with this gas price.
+
+After executing a block which was charged $g_C$ gas, the executor's timestamp and excess is updated:
+
+$$
+\begin{align}
+t_e &~:= t_e + \frac{g_C}{R} \\
+x &~:= x + \frac{g_C}{2} \\
+\end{align}
+$$
+
+### Handling gas target changes
+
+When a block is produced which modifies $T$, both the consensus thread and the execution thread will update to the modified $T$ after their own processing of the block.
+
+For example, restrictions of the queue size MUST be calculated based on the parent block's $T$. Similarly, the time spent executing a block MUST be calculated based on the parent block's $T$.
+
 ### Execution queue
 
 Standard, synchronous execution performs block execution prior to consensus sequencing. Instead, let there be a FIFO queue of accepted blocks.
