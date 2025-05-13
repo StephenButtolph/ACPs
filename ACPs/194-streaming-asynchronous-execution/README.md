@@ -105,6 +105,34 @@ The additional delay amortises any spurious slowdowns the block executor may hav
 
 ## Specification
 
+### Background
+
+ACP-103 introduced the following variables for calculating the gas price:
+
+<div align="center">
+
+| | |
+|---|---|
+| $T$ | the target gas consumed per second |
+| $M$ | minimum gas price |
+| $K$ | gas price update constant |
+| $R$ | gas capacity added per second |
+
+</div>
+
+ACP-176 provided a mechanism to make $T$ dynamic and set:
+
+```math
+\begin{align}
+R &= 2 \cdot T \\
+K &= 87 \cdot T
+\end{align}
+```
+
+The _excess_ actual consumption $x \ge 0$ beyond the target $T$ is tracked via numerical integration and used to calculate the gas price as:
+
+$$M \cdot \exp\left(\frac{x}{K}\right)$$
+
 ### Execution queue
 
 Standard, synchronous execution performs block execution prior to consensus sequencing. Instead, let there be a FIFO queue of accepted blocks.
@@ -167,24 +195,6 @@ flowchart LR
 > However, this is not a concern for EOA-to-EOA transfers of value so such transactions are guaranteed in totality.
 
 ### Updating gas price
-
-ACP-103 introduced the following variables for calculating the gas price:
-
-<div align="center">
-
-| | |
-|---|---|
-| $T$ | the target gas consumed per second |
-| $M$ | minimum gas price |
-| $K$ | gas price update constant |
-| $R$ | gas capacity added per second |
-
-</div>
-
-ACP-176 set $R = 2T$ and provided a mechanism to make $T$ dynamic.
-The _excess_ actual consumption $x \ge 0$ beyond the target $T$ is tracked via numerical integration and used to calculate the gas price as:
-
-$$M \cdot \exp\left(\frac{x}{K}\right)$$
 
 While ACPs 103 and 176 compute this price at the resolution of a single block, we can instead integrate at the resolution of a single transaction with equivalent pricing dynamics.
 Exploiting the proportionality of $R = pT$ with $p \ge 1$, for a transaction consuming $g$ gas, the excess is increased:
