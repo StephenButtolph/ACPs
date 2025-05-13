@@ -78,18 +78,24 @@ Once a block is marked as accepted by consensus, the block is enqueued in a FIFO
 
 #### Executing blocks
 
-As soon as there is a block available to execute on the execution queue, the block executor starts executing the block on top of the last executed (not settled) state.
+There is a constantly alive block executor whose job is to execute blocks taken off the FIFO execution queue.
 
-Time is measured in two ways by the block executor.
+In addition to executing the blocks, the block executor is also expected to provide deterministic timestamps for the beginning and end of execution of a block.
+
+Time is accordingly measured in two ways by the block executor.
 
 1. The timestamp included in the block header.
 2. The amount of gas charged during the execution of blocks.
 
+As soon as there is a block available to execute on the execution queue, the block executor starts processing the block.
+
 If the block executor's current timestamp is prior to the current block's timestamp, the block executor's timestamp is advanced to the block's timestamp.
 
-As the block executor executes blocks, it advances its timestamp according to the expected speed of gas processing.
+The block is then executed on top of the last executed (not settled) state.
 
-After a block is finished executing, the block executor attaches a timestamp to the block to identify when it finished execution.
+After executing the block, the block executor advances its timestamp based on the gas usage of the block.
+
+The block's execution time is now timestamped and the block is available to be settled.
 
 #### Settling blocks
 
