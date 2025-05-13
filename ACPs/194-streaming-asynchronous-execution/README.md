@@ -241,27 +241,25 @@ A reference implementation is still a work-in-progress. This ACP will be updated
 
 ### Worst-case transaction validity
 
-To avoid a DoS vulnerability on execution, we require an upper bound on transaction gas cost (i.e. amount $\times$ price).
-Beyond regular requirements for transaction validity (e.g. nonce, signature, etc.) we therefore introduce "worst-case cost" validity.
+To avoid a DoS vulnerability on execution, we require an upper bound on transaction gas cost (i.e. amount $\times$ price) beyond the regular requirements for transaction validity (e.g. nonce, signature, etc.). We therefore introduced "worst-case cost" validity.
 
-Consider a hypothetical situation in which all enqueued transactions use their entire gas limit during execution.
-We can prove that, for every transaction, this would result in the greatest possible:
+We can prove that, for every transaction, assuming the usage of their full gas limit during execution results in the greatest possible:
 
 1. Consumption of gas units (by definition of the gas limit); and
 2. Gas excess $x$ (and therefore gas price) at the time of execution.
 
-For a queue of transactions $Q = \\{i\\}_ {i \ge 0}$ the gas excess $x_j$ immediately prior to execution of transaction $j \in Q$ is a monotonic, non-decreasing function of the gas usage of all preceding transactions in the queue; i.e. $x_j~:=~f(\\{g_i\\}_{i<j})$.
+For a queue of blocks $Q = \\{i\\}_ {i \ge 0}$ the gas excess $x_j$ immediately prior to execution of block $j \in Q$ is a monotonic, non-decreasing function of the gas usage of all preceding blocks in the queue; i.e. $x_j~:=~f(\\{g_i\\}_{i<j})$.
 
-To see this, consider transaction $0 \le k<j$ consuming gas $g_k$.
+To see this, consider block $0 \le k<j$ consuming gas $g_k$.
 A decrease in $g_k$ reduces the immediate increase of $x$.
-Furthermore, this lowered consumption can never reduce a chunk's gas surplus and hence any decrease of $x$ is $\ge$ predicted.
-The excess, and hence gas price, for every later transaction $x_{i>k}$ is therefore reduced:
+Furthermore, this lowered consumption can only further reduce $x$ at the start of executing the next block. Hence any decrease of $x$ is $\ge$ predicted.
+The excess, and hence gas price, for every later block $x_{i>k}$ is therefore reduced:
 
 $$
 \downarrow g_k \implies
 \begin{cases}
-    \downarrow \frac{g \cdot (p-1)}{p} \\
-    \uparrow \frac{s}{p}
+    \downarrow \frac{g}{2} \\
+    \downarrow \frac{g}{R}
 \end{cases}
 \implies \downarrow \Delta x_k
 \implies \downarrow M \cdot \exp\left(\frac{x_{i>k}}{K}\right)
@@ -276,11 +274,16 @@ Transaction _acceptance_ under worst-case cost validity is therefore a guarantee
 ### Queue DoS protection
 
 Worst-case cost validity only protects against DoS at the point of execution but leaves the queue vulnerable to high-limit, low-usage transactions.
-For example, a malicious user could send a transfer-only transaction (21k gas) with a limit set to multiple chunks.
-Although they would have to have sufficient funds to theoretically pay for all the chunks, they would never actually be charged this amount. Pushing a sufficient number of such transactions to the queue would artificially inflate the worst-case cost of other users.
 
-Gas limits are typically set higher than expected gas used to allow for a buffer should gas estimates be imprecise.
-A lower bound of 50% of the specified limit, for example, would allow for a 100% buffer on estimates without penalising the sender, while still disincentivising falsely high limits.
+For example, a malicious user could send a transfer-only transaction (21k gas) with a limit set consume the block's full gas limit.
+
+Although they would have to have sufficient funds to theoretically pay for all the reserved gas, they would never actually be charged this amount. Pushing a sufficient number of such transactions to the queue would artificially inflate the worst-case cost of other users.
+
+Therefore, the gas charged was modified from being equal to the gas usage to the above $g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)$
+
+Gas limits are typically set higher than expected gas used to allow for a buffer should gas estimates be imprecise. So $\lambda$ should not be set to $1$. However, setting $\lambda$ to $\infty$ would allow users to fill the queue without paying fees.
+
+Setting $\lambda ~:= 2$ allows for a 100% buffer on gas usage estimates without penalising the sender, while still disincentivising falsely high limits.
 
 #### Upper bound on queue DoS
 
@@ -303,22 +306,24 @@ by maximizing $\Sigma_{\forall i} (g_L - g_U)_i$ to maximize $x_W - x_A$.
 > [!TIP]
 > Although $D$ shadows a variable in ACP-176, that one is very different to anything here so there won't be confusion.
 
-Recall that the proportionality $p$ of capacity per second and target gas per second ($R = pT$) results in increasing excess such that
+Recall that the proportionality of capacity per second and target gas per second ($R = 2 \cdot T$) results in increasing excess such that
 
 $$
-x := x + \frac{g (p-1)}{p}.
+x := x + \frac{g}{2}
 $$
 
 Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
 
 $$
 \begin{align}
-\Delta x_A &\ge \lambda \cdot \omega \cdot \frac{p-1}{p} \\
-\Delta x_W &= \omega \cdot \frac{p-1}{p} \\
-\Delta x_W - \Delta x_A &\le (1-\lambda) \cdot \omega \cdot \frac{p-1}{p} \\
-&= (1-\lambda) \cdot \frac{\tau R}{\lambda} \cdot \frac{p-1}{p} \\
-&= \frac{1-\lambda}{\lambda} \cdot \tau \cdot p T \cdot \frac{p-1}{p} \\
-&= \frac{1-\lambda}{\lambda} \cdot \tau \cdot T \cdot (p-1).
+\Delta x_A &\ge \frac{\omega}{2 \cdot \lambda} \\
+\Delta x_W &= \frac{\omega}{2} \\
+\Delta x_W - \Delta x_A &\le \frac{\omega}{2} - \frac{\omega}{2 \cdot \lambda} \\
+&= (1-\frac{1}{\lambda}) \cdot \frac{\omega}{2} \\
+&= (1-\frac{1}{\lambda}) \cdot \frac{R \cdot \tau \cdot \lambda}{2} \\
+&= (\lambda-1) \cdot \frac{R \cdot \tau \cdot}{2} \\
+&= (\lambda-1) \cdot \frac{2 \cdot T \cdot \tau}{2} \\
+&= (\lambda-1) \cdot T \cdot \tau \\
 \end{align}
 $$
 
@@ -335,7 +340,21 @@ $$
 When the queue is empty (i.e. the execution stream has caught up with accepted transactions), the worst-case fee estimate $f_W$ is known to be the actual base fee $f_A$; i.e. $Q = \emptyset \implies D=1$. The previous bound on $\Delta x_W - \Delta x_A$ also bounds Mallory's ability such that:
 
 $$
-D \le \exp \left( \frac{\frac{1-\lambda}{\lambda} \cdot \tau \cdot T \cdot (p-1)}{K} \right).
+\begin{align}
+D &\le \exp \left( \frac{(\lambda-1) \cdot T \cdot \tau}{K} \right)\\
+&= \exp \left( \frac{(\lambda-1) \cdot T \cdot \tau}{87 \cdot T} \right)\\
+&= \exp \left( \frac{(\lambda-1) \cdot \tau}{87} \right)\\
+\end{align}
+$$
+
+Therefore, for the values suggested by this ACP:
+
+$$
+\begin{align}
+D &\le \exp \left( \frac{(2-1) \cdot 5}{87} \right)\\
+&= \exp \left( \frac{5}{87} \right)\\
+&\simeq 1.06\\
+\end{align}
 $$
 
 ## Appendix
@@ -357,85 +376,6 @@ Other than the _earliest_ (genesis) named block, which MUST be interpreted in th
 > [!NOTE]
 > The finality guarantees of Snowman consensus remove any distinction between _safe_ and _finalized_. 
 > Furthermore, the _latest_ block is not at risk of re-org, only of a negligible risk of data corruption local to the API node.
-
-### Alternative framing of chunk filling
-
-The criteria for chunk filling define an online algorithm that is equivalent to this offline perspective.
-
-Consider a queue for which actual gas consumption is known for all transactions, and said consumption exceeds the chain capacity so the queue is never exhausted.
-Filling can now be viewed as an allocation problem, selecting a deterministic chunk for each transaction.
-As each round of consensus is required to record a specific chunk, no theoretical chunk can end earlier than any of its assigned transactions.
-A transaction is therefore allocated to the theoretical chunk during which its execution completes.
-
-> [!TIP]
-> As chunk capacity is measured in terms of a gas _rate_, time and gas can be thought of interchangeably along the x-axis.
-> Chunks are 1-indexed to reflect the time at which they end.
-
-```mermaid
----
-displayMode: compact
----
-gantt
-    title Theoretical chunks
-    dateFormat  x
-    axisFormat %S
-    tickInterval 1second
-    section Chunks
-    c1  :c1, 0, 1s
-    c2  :c2, after c1, 1s
-    c3  :c3, after c2, 1s
-    c4  :c4, after c3, 1s
-    c5  :c5, after c4, 1s
-    c6  :c6, after c5, 1s
-    section Transactions
-    t0  :t0, 0, 0.4s
-    t1  :t1, after t0, 0.4s
-    t2  :t2, after t1, 0.4s
-    t3  :t3, after t2, 0.8s
-    t4  :t4, after t3, 0.9s
-    t5  :t5, after t4, 2s
-    t6  :t6, after t5, 1.1s
-    section Donations
-    c1->c2  : 800, 0.2s
-    c3->c4  : 2900, 0.1s
-    c4->c5  : 2900, 1.1s
-    c5->c6  : 4900, 0.1s
-```
-
-1. Total gas used by transactions `t0` and `t1` is less than a single chunk so they are allocated to `c1`.
-2. Addition of `t2` would exceed `c1` capacity so it is instead allocated to `c2`.
-3. Note the necessary "donation" of `c1`'s residual capacity to `c2`, allowing for allocation of `t3` as well.
-4. Transaction `t4` is the only one that can fit into chunk `c3`.
-5. The large transaction `t5` requires more than a single chunk of gas, resulting in `c4` being an empty _interim_ chunk and the allocation of `t5` to `c5`.
-    1. The residual of `c3` was first donated to `c4`, which was unable to fit the next transaction, resulting in transitive donation to `c5`.
-6. Even with its double donation, `c5` no longer has sufficient capacity for the final transaction `t6`, which is in `c6`.
-
-Note that the donation-adjusted chunks fully utilise chain capacity while also completing execution no later than their respective timestamps, which would otherwise be detrimental to consensus.
-
-```mermaid
----
-displayMode: compact
----
-gantt
-    title Donation-adjusted chunks
-    dateFormat x
-    axisFormat %S
-    tickInterval 1second
-    section Chunks
-    c1  :a1, 0, 0.8s
-    c2  :a2, after a1, 1.2s
-    c3  :a3, after a2, 0.9s
-    c5  :a5, after a3, 2s
-    c6  :a6, after a5, 1.1s
-    section Transactions
-    t0  :t0, 0, 0.4s
-    t1  :t1, after t0, 0.4s
-    t2  :t2, after t1, 0.4s
-    t3  :t3, after t2, 0.8s
-    t4  :t4, after t3, 0.9s
-    t5  :t5, after t4, 2s
-    t6  :t6, after t5, 1.1s
-```
 
 ### Streaming vs regular asynchronous pipelining
 
