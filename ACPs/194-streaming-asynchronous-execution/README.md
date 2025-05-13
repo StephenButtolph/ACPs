@@ -55,7 +55,7 @@ Under SAE, a block is first _proposed_ by a validator. In order for validators t
 flowchart LR
     I[Proposed] --> A[Accepted]
     A -->|variable delay| E[Executed]
-    E -->|$\tau$ seconds| S[Settled]
+    E -->|τ seconds| S[Settled]
     A -. guarantees .-> S
 ```
 
