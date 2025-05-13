@@ -179,7 +179,7 @@ x &~:= \max\left(x - T \cdot \Delta{t}, 0\right) \\
 \end{align}
 $$
 
-The block is then executed with this gas price.
+The block is then executed with the gas price calculated by the current value of $x$.
 
 After executing a block which was charged $g_C$ gas, the executor's timestamp and excess is updated:
 
