@@ -147,6 +147,18 @@ where $\lambda$ enforces a lower bound on the gas charged based on the gas limit
 
 In all cases that execution used to refer to gas usage, we will from now on consider gas charged. For example, the gas excess $x$ will be modified by $g_C$ rather than $g_U$.
 
+### Queue size
+
+The constant time delay between execution and settlement is defined as $\tau$ seconds.
+
+The maximum allowed size of the execution queue is defined as:
+
+$$
+\omega ~:= R \cdot \tau \cdot \lambda
+$$
+
+Any block that could cause the total sum of gas limits for transactions in the execution queue to exceed $\omega$ MUST be considered invalid.
+
 ### Execution queue
 
 Standard, synchronous execution performs block execution prior to consensus sequencing. Instead, let there be a FIFO queue of accepted blocks.
@@ -336,7 +348,7 @@ $$
 x := x + \frac{g (p-1)}{p}.
 $$
 
-If we allow the queue to have a bandwidth of $R\lambda^{-1}$ gas/second and limit its length $\tau$ seconds or a back-pressure window of $\omega = \tau R \lambda^{-1}$ gas, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
+Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
 
 $$
 \begin{align}
