@@ -79,7 +79,7 @@ Once a block is marked as accepted by consensus, the block is enqueued in a FIFO
 
 There is a constantly alive block executor whose job is to execute blocks taken off the FIFO execution queue.
 
-In addition to executing the blocks, the block executor is also expected to provide deterministic timestamps for the beginning and end of execution of a block.
+In addition to executing the blocks, the block executor provides deterministic timestamps for the beginning and end of execution of a block.
 
 Time is accordingly measured in two ways by the block executor.
 
