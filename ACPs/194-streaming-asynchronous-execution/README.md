@@ -143,10 +143,10 @@ $$
 g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)
 $$
 
+where $\lambda$ enforces a lower bound on the gas charged based on the gas limit.
+
 > [!NOTE]
 > $\dfrac{g_L}{\lambda}$ is rounded up by actually calculating $\dfrac{g_L + \lambda - 1}{\lambda}$
-
-where $\lambda$ enforces a lower bound on the gas charged based on the gas limit.
 
 In all cases that execution used to refer to gas usage, we will from now on consider gas charged. For example, the gas excess $x$ will be modified by $g_C$ rather than $g_U$.
 
