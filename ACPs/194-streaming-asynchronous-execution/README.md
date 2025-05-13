@@ -190,6 +190,8 @@ x &~:= x + \frac{g_C}{2} \\
 \end{align}
 $$
 
+$t_e$ is now this block's execution timestamp.
+
 ### Handling gas target changes
 
 When a block is produced which modifies $T$, both the consensus thread and the execution thread will update to the modified $T$ after their own processing of the block.
