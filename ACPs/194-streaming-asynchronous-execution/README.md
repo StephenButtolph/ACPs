@@ -71,6 +71,9 @@ The worst-case bounds enforce minimum balances of sender accounts and the maximu
 
 Prior to adding a proposed block to consensus, all validators MUST verify that the block builder correctly enforced the worst-case bounds while building the block. This guarantees that the block can be executed successfully if it is accepted.
 
+> [!NOTE]
+> The worst-case bounds guarantee does not provide assurance about whether or not a transaction will revert nor whether its computation will run out of gas by reaching the specified limit. The verification only ensures the transaction is capable of paying for the accrued fees.
+
 #### Accepting blocks
 
 Once a block is marked as accepted by consensus, the block is enqueued in a FIFO execution queue.
