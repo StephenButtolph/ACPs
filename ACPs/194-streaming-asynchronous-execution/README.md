@@ -196,7 +196,9 @@ $t_e$ is now this block's execution timestamp.
 
 When a block is produced which modifies $T$, both the consensus thread and the execution thread will update to the modified $T$ after their own processing of the block.
 
-For example, restrictions of the queue size MUST be calculated based on the parent block's $T$. Similarly, the time spent executing a block MUST be calculated based on the parent block's $T$.
+For example, restrictions of the queue size MUST be calculated based on the parent block's $T$.
+
+Similarly, the time spent executing a block MUST be calculated based on the parent block's $T$.
 
 ### Block settlement
 
@@ -348,7 +350,7 @@ In particular, the API method `eth_getBlockReceipts` MUST return the receipts co
 #### Named blocks
 
 The Ethereum Mainnet APIs allow for retrieving blocks by named parameters that the API server resolves based on their consensus mechanism.
-Other than the _earliest_ (genesis) named block, which MUST be interpreted in the same manner, all other named blocks are mapped to SAE in terms of the execution status of all block transactions and MUST be interpreted as follows:
+Other than the _earliest_ (genesis) named block, which MUST be interpreted in the same manner, all other named blocks are mapped to SAE in terms of the execution status of blocks and MUST be interpreted as follows:
 
  * _pending_: the most recently _accepted_ block;
  * _latest_: the block that was most recently _executed_;
