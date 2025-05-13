@@ -206,8 +206,6 @@ For a _proposed_ block which includes timestamp $t_b$, all ancestors whose execu
 
 The _proposed_ block must include the `stateRoot` produced by the execution of the most recently settled block.
 
-Similarly, it MUST record the transaction-receipt root for all transactions executed as part of chunks in the half-open range $t_C \in (t_{B-1} - d, t_B - d]$.
-
 For any _newly_ settled blocks, the _proposed_ block must include all execution artifacts:
 - `receiptsRoot`
 - `logsBloom`
