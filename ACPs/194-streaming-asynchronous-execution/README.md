@@ -198,107 +198,29 @@ When a block is produced which modifies $T$, both the consensus thread and the e
 
 For example, restrictions of the queue size MUST be calculated based on the parent block's $T$. Similarly, the time spent executing a block MUST be calculated based on the parent block's $T$.
 
-### Execution queue
+### Block settlement
 
-Standard, synchronous execution performs block execution prior to consensus sequencing. Instead, let there be a FIFO queue of accepted blocks.
+For a _proposed_ block which includes timestamp $t_b$, all ancestors whose execution timestamp $t_e$ is $t_e + \tau \leq t_b$ are considered settled.
 
-#### Pushing transactions
+The _proposed_ block must include the `stateRoot` produced by the execution of the most recently settled block.
 
-Under SAE, a block's ordered transactions instead constitute those to be pushed to the queue
-A transaction is said to be _included_ when a block builder adds it to a block and _accepted_ once consensus, performed over blocks, agrees to add it to the queue.
-We refer to the ordered set of enqueued transactions as a _tranche_.
-
-#### Clearing the queue
-
-For a block indexed by its height $B$, let its timestamp be $t_B$, measured at per-second resolution.
-We now introduce the concept of a _chunk_ of executed transactions, indexed by its timestamp $t_C$, at the same resolution.
-Whereas proposers _build_ blocks, execution is said to _fill_ chunks and a chunk is considered full when the first of two criteria is met:
-
-1. The queue accepted by time $t_C$ is exhausted; i.e. the queue as at the last block with a timestamp $t_B \le t_C$; or
-2. The chunk's remaining gas limit is insufficient for the next transaction in the queue.
-
-As there is one chunk per second, the gas limit is simply the gas capacity added per second, $R$, of ACPs 103 and 176.
-
-A chunk that is filled under criterion (2) may have leftover capacity due to imperfect packing and MUST _donate_ this residual capacity to the next chunk to allow for full utilisation of the chain's gas throughput.
- This is not to say that execution of the queue should be paused until the next second, but that the transaction's allocated chunk may well be in the future.
-For clarification, see the [alternative framing of chunk filling](#alternative-framing-of-chunk-filling).
-
-> [!NOTE]
-> A side effect of chunk donation and when it is invoked is that transactions using more than a single chunk of gas MAY induce empty _interim_ chunks.
-
-> [!WARNING]
-> A chunk filled due to queue exhaustion MUST NOT donate remaining capacity as this would result in excess load since the next known transaction won't be available for immediate execution.
-
-A completed chunk is comprised of (a) the updated state root; and (b) the set of receipts for transactions executed in the chunk.
-In addition to interim chunks, a chunk MAY also be empty if the queue was exhausted by the previous chunk and no block was agreed on by the next second.
-An empty chunk, by definition, has an empty set of receipts and the same state root as its predecessor.
-
-#### Recording state
-
-A block with timestamp $t_B$ MUST record the post-execution state root with a delay of exactly $d$ seconds, i.e. that which was determined by the (possibly empty) chunk at time $t_C = t_B - d$.
 Similarly, it MUST record the transaction-receipt root for all transactions executed as part of chunks in the half-open range $t_C \in (t_{B-1} - d, t_B - d]$.
-It is at this point that a transaction is said to be _settled_ on the blockchain.
 
-#### Terminology recap
-
-In summary, a transaction is _included_ when added to a _built_ block.
-It is later _accepted_ after consensus agrees upon the block in which it was included, enqueuing the transaction (as part of the block's _tranche_) for later _execution_ in a chunk.
-The chunk is _full_ when it exhausts either the queue or its gas limit, and the transaction is _settled_ when its receipt is part of a later block agreed upon by consensus.
-While the delay between execution and settlement is always $d$ seconds, the time between acceptance and execution is variable.
-Note, however, that the validity checks we now describe mean that acceptance is a guarantee of eventual settlement in a deterministic but as yet unknown block.
-
-```mermaid
-flowchart LR
-    I[Included] --> A[Accepted]
-    A -->|variable delay| E[Executed]
-    E -->|d seconds| S[Settled]
-    A -. guarantees .-> S
-```
+For any _newly_ settled blocks, the _proposed_ block must include all execution artifacts:
+- `receiptsRoot`
+- `logsBloom`
+- `gasUsed`
 
 > [!NOTE]
-> The guarantee provides no assurance about whether or not a transaction will revert nor whether its computation will run out of gas by reaching the specified limit.
-> However, this is not a concern for EOA-to-EOA transfers of value so such transactions are guaranteed in totality.
+> If the block executor has fallen behind, the node may not be able to determine precisely which ancestors should be considered settled. If this occurs, validators MUST allow the block executor to catch up prior to deciding the block's validity.
 
-### Updating gas price
+### Block validity and building
 
-While ACPs 103 and 176 compute this price at the resolution of a single block, we can instead integrate at the resolution of a single transaction with equivalent pricing dynamics.
-Exploiting the proportionality of $R = pT$ with $p \ge 1$, for a transaction consuming $g$ gas, the excess is increased:
+After determining which blocks to settle, all remaining ancestors of the new block must be inspected to determine the worst-case bounds on $x$ and account balances. Account nonces are able to be known immediately.
 
-$$x := x + \frac{g \cdot (p-1)}{p}$$
+The worst-case bound on $x$ can be calculated by following the block executor update rules using $g_L$ rather than $g_C$.
 
-and the gas price is updated immediately after execution, according to the same formula.
-When the transaction queue is drained and a chunk has a gas _surplus_ of $0 \le s \le R$, the excess is decreased:
-
-$$x := \max\left(x-\frac{s}{p}, 0\right)$$
-
-and the gas price is updated before the next chunk.
-With the current $p = 2$, half of all gas consumed is added to excess while half of all surplus is deducted.
-
-> [!NOTE]
-> The ACP-103 concept of a leaky gas bucket with capacity $C$ is an emergent phenomenon in SAE.
-
-### JSON RPC methods
-
-Although asynchronous execution decouples the transactions and receipts recorded by a specific block, APIs MUST NOT alter their behavior to mirror this.
-In particular, the API method `eth_getBlockReceipts` MUST return the receipts corresponding to the block's transactions, not the receipts settled in the block.
-
-To achieve this, we first define the _executed_ and _settled_ states for blocks.
-A block is initially _accepted_ by consensus, enqueuing its tranche of transactions.
-Once the last transaction in the tranche has been executed, the block itself is considered to be executed.
-When the same transaction is settled then so too is the block considered settled.
-
-#### Named blocks
-
-The Ethereum Mainnet APIs allow for retrieving blocks by named parameters that the API server resolves based on their consensus mechanism.
-Other than the _earliest_ (genesis) named block, which MUST be interpreted in the same manner, all other named blocks are mapped to SAE in terms of the execution status of all block transactions and MUST be interpreted as follows:
-
- * _pending_: the most recently _accepted_ block;
- * _latest_: the block that was most recently _executed_;
- * _safe_ and _finalized_: the block that was most recently _settled_.
-
-> [!NOTE]
-> The finality guarantees of Snowman consensus remove any distinction between _safe_ and _finalized_. 
-> Furthermore, the _latest_ block is not at risk of re-org, only of a negligible risk of data corruption local to the API node.
+The worst-case bound on account balances can be calculated by charging the worst-case gas cost to the sender of a transaction along with deducting the value of the transaction from the sender's account balance.
 
 ## Backwards Compatibility
 
@@ -417,6 +339,24 @@ D \le \exp \left( \frac{\frac{1-\lambda}{\lambda} \cdot \tau \cdot T \cdot (p-1)
 $$
 
 ## Appendix
+
+### JSON RPC methods
+
+Although asynchronous execution decouples the transactions and receipts recorded by a specific block, APIs MUST NOT alter their behavior to mirror this.
+In particular, the API method `eth_getBlockReceipts` MUST return the receipts corresponding to the block's transactions, not the receipts settled in the block.
+
+#### Named blocks
+
+The Ethereum Mainnet APIs allow for retrieving blocks by named parameters that the API server resolves based on their consensus mechanism.
+Other than the _earliest_ (genesis) named block, which MUST be interpreted in the same manner, all other named blocks are mapped to SAE in terms of the execution status of all block transactions and MUST be interpreted as follows:
+
+ * _pending_: the most recently _accepted_ block;
+ * _latest_: the block that was most recently _executed_;
+ * _safe_ and _finalized_: the block that was most recently _settled_.
+
+> [!NOTE]
+> The finality guarantees of Snowman consensus remove any distinction between _safe_ and _finalized_. 
+> Furthermore, the _latest_ block is not at risk of re-org, only of a negligible risk of data corruption local to the API node.
 
 ### Alternative framing of chunk filling
 
