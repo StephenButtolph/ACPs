@@ -190,6 +190,9 @@ x &~:= x + \frac{g_C}{2} \\
 \end{align}
 $$
 
+> [!NOTE]
+> The update rule here assumes that $t_e$ is a timestamp that can track the passage of time both by gas and by wall-clock time. $\frac{g_C}{R}$ MUST NOT be simply rounded. Rather, the gas accumulation should be left as a fraction.
+
 $t_e$ is now this block's execution timestamp.
 
 ### Handling gas target changes
