@@ -427,7 +427,7 @@ As EOA-to-EOA transfers of value are entirely guaranteed upon _acceptance_, bloc
 
 A reliable marker of such transactions is a gas limit of 21,000 as this is an indication from the sender that they do not intend to execute bytecode.
 
-This could delay the ability to issue transactions that depend on these EOA-to-EOA transfers.
+However, this could delay the ability to issue transactions that depend on these EOA-to-EOA transfers.
 
 Block builders are free to make their own decisions around which transactions to include.
 
