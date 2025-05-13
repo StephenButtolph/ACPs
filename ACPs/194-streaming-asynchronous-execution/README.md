@@ -138,7 +138,7 @@ $$M \cdot \exp\left(\frac{x}{K}\right)$$
 
 ### Gas charged
 
-We introduce $g_L$, $g_U$, and $g_C$ as the gas _limit_, _used_ and _charged_ per transaction, respectively. We define
+We introduce $g_L$, $g_U$, and $g_C$ as the gas _limit_, _used_, and _charged_ per transaction, respectively. We define
 
 $$
 g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)
