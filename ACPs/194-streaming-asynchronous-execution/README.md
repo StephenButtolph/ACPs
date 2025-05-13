@@ -68,7 +68,7 @@ The validator selection mechanism for block production is unchanged. However, bl
 
 The block builder is expected to include transactions based on the most recently settled state and to apply worst-case bounds on the execution of the ancestor blocks prior to the most recently settled block.
 
-The worst-case bounds enforce minimum balances of sender accounts and the maximum required base fee. The worst-case bounds are described in detail below in the Specification section.
+The worst-case bounds enforce minimum balances of sender accounts and the maximum required base fee. The worst-case bounds are described below [in detail](#specification).
 
 Prior to adding a proposed block to consensus, all validators MUST verify that the block builder correctly enforced the worst-case bounds while building the block. This guarantees that the block can be executed successfully if it is accepted.
 
