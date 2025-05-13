@@ -24,13 +24,13 @@ Without the need to compute state _roots_, such clients can eschew expensive Mer
 End users see expedited but identical transaction results.
 3. Irregular stop-the-world events like database compaction are amortised over multiple blocks.
 4. Introduces additional bursty throughput by eagerly accepting transactions, without a reduction in security guarantees.
-5. Non-data-dependent transactions, such as EOA-to-EOA transfers of value, can be observed prior to execution.
+5. Third-party accounting of non-data-dependent transactions, such as EOA-to-EOA transfers of value, can be performed prior to execution.
 
 ### Future features
 
 Performing transaction execution after consensus sequencing allows the usage of consensus artifacts in execution. This unblocks some additional future improvements:
 
-1. Exposing a realtime VRF during transaction execution.
+1. Exposing a real-time VRF during transaction execution.
 2. Using an encrypted mempool to reduce front-running.
 
 This ACP does not introduce these, but some form of asynchronous execution is required to correctly implement them.
@@ -277,7 +277,7 @@ We can prove that, for every transaction, this would result in the greatest poss
 1. Consumption of gas units (by definition of the gas limit); and
 2. Gas excess $x$ (and therefore gas price) at the time of execution.
 
-For a queue of transactions $Q = \{i\}_{i \ge 0}$ the gas excess $x_j$ immediately prior to execution of transaction $j \in Q$ is a monotonic, non-decreasing function of the gas usage of all preceding transactions in the queue; i.e. $x_j~:=~f(\{g_i\}_{i<j})$.
+For a queue of transactions $Q = \\{i\\}_{i \ge 0}$ the gas excess $x_j$ immediately prior to execution of transaction $j \in Q$ is a monotonic, non-decreasing function of the gas usage of all preceding transactions in the queue; i.e. $x_j~:=~f(\\{g_i\\}_{i<j})$.
 
 To see this, consider transaction $0 \le k<j$ consuming gas $g_k$.
 A decrease in $g_k$ reduces the immediate increase of $x$.
@@ -467,6 +467,16 @@ sankey-beta
   Q,C6,10
   Q,C7,9
 ```
+
+### Observations around transaction prioritisation
+
+As EOA-to-EOA transfers of value are entirely guaranteed upon _acceptance_, block builders MAY choose to prioritise other transactions for earlier execution.
+
+A reliable marker of such transactions is a gas limit of 21,000 as this is an indication from the sender that they do not intend to execute bytecode.
+
+This could delay the ability to issue transactions that depend on these EOA-to-EOA transfers.
+
+Block builders are free to make their own decisions around which transactions to include.
 
 ## Acknowledgments
 
