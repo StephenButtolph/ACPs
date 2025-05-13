@@ -136,6 +136,18 @@ The _excess_ actual consumption $x \ge 0$ beyond the target $T$ is tracked via n
 
 $$M \cdot \exp\left(\frac{x}{K}\right)$$
 
+### Gas charged
+
+We introduce $g_L$, $g_U$, and $g_C$ as the gas _limit_, _used_ and _charged_ per transaction, respectively. We define
+
+$$
+g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)
+$$
+
+where $\lambda$ enforces a lower bound on the gas charged based on the gas limit.
+
+In all cases that execution used to refer to gas usage, we will from now on consider gas charged. For example, the gas excess $x$ will be modified by $g_C$ rather than $g_U$.
+
 ### Execution queue
 
 Standard, synchronous execution performs block execution prior to consensus sequencing. Instead, let there be a FIFO queue of accepted blocks.
@@ -300,13 +312,7 @@ A lower bound of 50% of the specified limit, for example, would allow for a 100%
 
 #### Upper bound on queue DoS
 
-With $R$ (for rate) as already defined (gas capacity per second), we introduce $g_L$, $g_U$, and $g_C$ as gas _limit_, _used_ and _charged_ per transaction, respectively, and
-
-$$
-g_C := \max(g_U, \lambda \cdot g_L)
-$$
-
-where $\lambda$ enforces a lower bound on the charge.
+With $R$ (gas capacity per second) for rate and $g_C$ (gas charged) as already defined.
 
 The actual gas excess $x_A$ has an upper bound of the worst-case excess $x_W$, both of which can be used to calculate respective base fees $f_A$ and $f_W$ (the variable element of gas prices) from the existing exponential function:
 
