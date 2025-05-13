@@ -225,6 +225,21 @@ The worst-case bound on $x$ can be calculated by following the block executor up
 
 The worst-case bound on account balances can be calculated by charging the worst-case gas cost to the sender of a transaction along with deducting the value of the transaction from the sender's account balance.
 
+### Configuration Parameters
+
+As noted above, SAE depends on the values of $\tau$ and $\lambda$ to be set as parameters and the value of $\omega$ is derived from $T$. 
+
+Parameters to specify for the C-Chain are:
+
+<div align="center">
+
+| Parameter | Description | C-Chain Configuration|
+| - | - | - |
+| $\tau$ | duration between execution and settlement | $5s$ |
+| $\lambda$ | minimum conversion from gas limit to gas charged | $2$ |
+
+</div>
+
 ## Backwards Compatibility
 
 This ACP modifies the meaning of multiple fields in the block. A comprehensive list of changes will be produced once a reference implementation is available.
@@ -359,6 +374,10 @@ D &\le \exp \left( \frac{(2-1) \cdot 5}{87} \right)\\
 &\simeq 1.06\\
 \end{align}
 $$
+
+In summary, Mallory can require users to increase their gas price by at most ~6%. In practice, the gas price often fluctuates more than 6% on a regular basis. Therefore, this does not appear to be a significant attack vector.
+
+However, any deviation that dislodges the gas price bidding mechanism from a true bidding mechanism is of note.
 
 ## Appendix
 
