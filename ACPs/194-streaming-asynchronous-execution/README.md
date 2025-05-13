@@ -40,14 +40,65 @@ This ACP does not introduce these, but some form of asynchronous execution is re
 1. A sophisticated DeFi trader runs a highly optimised execution client, locally clearing the transaction queue well in advance of the network—setting the stage for HFT DeFi.
 2. A custodial platform filters the queue for only those transactions sent to one of their EOAs, immediately crediting user balances.
 
+## Description
+
+In standard, synchronous, execution a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is _executed_. After _execution_, the block is _accepted_ by consensus. The act of _accepting_ a block immediately _settles_ all transactions in the block by including the transaction execution results.
+
+Under SAE, a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is verified that later _execution_ will succeed. The block is then _accepted_ by consensus. The act of _accepting_ a block _enqueues_ the block to be _executed_. After the block is _executed_, a following block will reference the execution results and _settle_ all transactions in now _executed_ block.
+
+```mermaid
+flowchart LR
+    I[Proposed] --> A[Accepted]
+    A -->|variable delay| E[Executed]
+    E -->|d seconds| S[Settled]
+    A -. guarantees .-> S
+```
+
+### Block lifecycle
+
+#### Proposing blocks
+
+The validator selection mechanism for block production is unchanged. However, block builders are no longer expected to execute transactions during block building.
+
+The block builder is expected to include transactions based on the most recently settled state and to apply worst-case bounds on the execution of the ancestor blocks prior to the most recently settled block.
+
+The worst-case bounds enforce minimum balances of sender accounts and the maximum required base fee. The worst-case bounds are described in detail below in the Specification section.
+
+Prior to adding a proposed block to consensus, all validators MUST verify that the block builder correctly enforced the worst-case bounds while building the block. This guarantees that the block can be executed successfully if it is accepted.
+
+#### Accepting blocks
+
+Once a block is marked as accepted by consensus, the block is enqueued in a FIFO execution queue at the timestamp specified in the block header.
+
+#### Executing blocks
+
+As soon as there is a block available to execute on the execution queue, the block executor starts executing the block on top of the last executed (not settled) state.
+
+Time is measured in two ways by the block executor.
+
+1. The timestamp included in the block header.
+2. The amount of gas charged during the execution of blocks.
+
+If the block executor's current timestamp is prior to the current block's timestamp, the block executor's timestamp is advanced to the block's timestamp.
+
+As the block executor executes blocks, it advances its timestamp according to the expected speed of gas processing.
+
+After a block is finished executing, the block executor attaches a timestamp to the block to identify when it finished execution.
+
+#### Settling blocks
+
+Previously executed blocks are settled by the acceptance of a new block whose timestamp is greater than or equal to the execution time of a prior block plus a constant additional delay.
+
+The additional delay amortises any spurious slowdowns the block executor may have encountered.
+
 ## Specification
 
-### Transaction queue
+### Execution queue
+
+Standard, synchronous execution performs block execution prior to consensus sequencing. Instead, let there be a FIFO queue of accepted blocks.
 
 #### Pushing transactions
 
-Standard, synchronous execution couples a block to the ordered set of transactions to be executed in said block.
-Instead, let there be a FIFO queue of all known, valid transactions—the specifics of "validity" will be addressed later.
 Under SAE, a block's ordered transactions instead constitute those to be pushed to the queue
 A transaction is said to be _included_ when a block builder adds it to a block and _accepted_ once consensus, performed over blocks, agrees to add it to the queue.
 We refer to the ordered set of enqueued transactions as a _tranche_.
