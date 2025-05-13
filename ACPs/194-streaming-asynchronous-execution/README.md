@@ -54,9 +54,9 @@ Under SAE, a block is first _proposed_ by a validator. In order for validators t
 ```mermaid
 flowchart LR
     I[Proposed] --> A[Accepted]
-    A -->| variable delay | E[Executed]
-    E -->| τ seconds | S[Settled]
-    A -. | guarantees | .-> S
+    A -->|variable delay| E[Executed]
+    E -->|τ seconds| S[Settled]
+    A -. guarantees .-> S
 ```
 
 ### Block lifecycle
