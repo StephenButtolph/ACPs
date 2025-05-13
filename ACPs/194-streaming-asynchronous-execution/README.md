@@ -87,6 +87,9 @@ Time is accordingly measured in two ways by the block executor.
 1. The timestamp included in the block header.
 2. The amount of gas charged during the execution of blocks.
 
+> [!NOTE]
+> Execution timestamp are more granular than block header timestamps. This is required to support sub-second block execution times.
+
 As soon as there is a block available to execute on the execution queue, the block executor starts processing the block.
 
 If the block executor's current timestamp is prior to the current block's timestamp, the block executor's timestamp is advanced to the block's timestamp.
