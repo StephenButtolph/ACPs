@@ -330,7 +330,7 @@ by maximizing $\Sigma_{\forall i} (g_L - g_U)_i$ to maximize $x_W - x_A$.
 Recall that the increasing excess occurs such that
 
 $$
-x := x + \frac{g}{R} \cdot (R - T)
+x := x + g \cdot \frac{(R - T)}{R}
 $$
 
 Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
