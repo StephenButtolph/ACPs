@@ -186,7 +186,7 @@ After executing a block which was charged $g_C$ gas, the executor's timestamp an
 $$
 \begin{align}
 t_e &~:= t_e + \frac{g_C}{R} \\
-x &~:= x + \frac{g_C}{2} \\
+x &~:= x + \frac{g_C}{R} \cdot (R - T) \\
 \end{align}
 $$
 
@@ -278,7 +278,7 @@ The excess, and hence gas price, for every later block $x_{i>k}$ is therefore re
 $$
 \downarrow g_k \implies
 \begin{cases}
-    \downarrow \frac{g}{2} \\
+    \downarrow \frac{g}{R} \cdot (R - T) \\
     \downarrow \frac{g}{R}
 \end{cases}
 \implies \downarrow \Delta x_k
@@ -326,24 +326,26 @@ by maximizing $\Sigma_{\forall i} (g_L - g_U)_i$ to maximize $x_W - x_A$.
 > [!TIP]
 > Although $D$ shadows a variable in ACP-176, that one is very different to anything here so there won't be confusion.
 
-Recall that the proportionality of capacity per second and target gas per second ($R = 2 \cdot T$) results in increasing excess such that
+Recall that the increasing excess occurs such that
 
 $$
-x := x + \frac{g}{2}
+x := x + \frac{g}{R} \cdot (R - T)
 $$
 
 Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
 
 $$
 \begin{align}
-\Delta x_A &\ge \frac{\omega}{2 \cdot \lambda} \\
-\Delta x_W &= \frac{\omega}{2} \\
-\Delta x_W - \Delta x_A &\le \frac{\omega}{2} - \frac{\omega}{2 \cdot \lambda} \\
-&= (1-\frac{1}{\lambda}) \cdot \frac{\omega}{2} \\
-&= (1-\frac{1}{\lambda}) \cdot \frac{R \cdot \tau \cdot \lambda}{2} \\
-&= (\lambda-1) \cdot \frac{R \cdot \tau \cdot}{2} \\
-&= (\lambda-1) \cdot \frac{2 \cdot T \cdot \tau}{2} \\
-&= (\lambda-1) \cdot T \cdot \tau \\
+\Delta x_A &\ge \frac{\omega}{\lambda} \cdot \frac{(R - T)}{R} \\
+\Delta x_W &= \omega \cdot \frac{(R - T)}{R} \\
+\Delta x_W - \Delta x_A &\le \omega \cdot \frac{(R - T)}{R} - \frac{\omega}{\lambda} \cdot \frac{(R - T)}{R} \\
+&= \omega \cdot \frac{(R - T)}{R} \cdot \left(1-\frac{1}{\lambda}\right) \\
+&= \omega \cdot \frac{(2 \cdot T - T)}{2 \cdot T} \cdot \left(1-\frac{1}{\lambda}\right) \\
+&= \frac{\omega}{2} \cdot \left(1-\frac{1}{\lambda}\right) \\
+&= \frac{R \cdot \tau \cdot \lambda}{2} \cdot \left(1-\frac{1}{\lambda}\right) \\
+&= \frac{R \cdot \tau}{2} \cdot (\lambda-1) \\
+&= \frac{2 \cdot T \cdot \tau}{2} \cdot (\lambda-1) \\
+&= T \cdot \tau \cdot (\lambda-1) \\
 \end{align}
 $$
 
@@ -361,9 +363,9 @@ When the queue is empty (i.e. the execution stream has caught up with accepted t
 
 $$
 \begin{align}
-D &\le \exp \left( \frac{(\lambda-1) \cdot T \cdot \tau}{K} \right)\\
-&= \exp \left( \frac{(\lambda-1) \cdot T \cdot \tau}{87 \cdot T} \right)\\
-&= \exp \left( \frac{(\lambda-1) \cdot \tau}{87} \right)\\
+D &\le \exp \left( \frac{T \cdot \tau \cdot (\lambda-1)}{K} \right)\\
+&= \exp \left( \frac{T \cdot \tau \cdot (\lambda-1)}{87 \cdot T} \right)\\
+&= \exp \left( \frac{\tau \cdot (\lambda-1)}{87} \right)\\
 \end{align}
 $$
 
@@ -371,7 +373,7 @@ Therefore, for the values suggested by this ACP:
 
 $$
 \begin{align}
-D &\le \exp \left( \frac{(2-1) \cdot 5}{87} \right)\\
+D &\le \exp \left( \frac{5 \cdot (2 - 1)}{87} \right)\\
 &= \exp \left( \frac{5}{87} \right)\\
 &\simeq 1.06\\
 \end{align}
