@@ -185,8 +185,9 @@ After executing a block which was charged $g_C$ gas, the executor's timestamp an
 
 $$
 \begin{align}
-t_e &~:= t_e + \frac{g_C}{R} \\
-x &~:= x + \frac{g_C}{R} \cdot (R - T) \\
+\Delta{t} &~:= \frac{g_C}{R} \\
+t_e &~:= t_e + \Delta{t} \\
+x &~:= x + \Delta{t} \cdot (R - T) \\
 \end{align}
 $$
 
