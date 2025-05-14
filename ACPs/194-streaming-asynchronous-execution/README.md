@@ -40,70 +40,77 @@ This ACP does not introduce these, but some form of asynchronous execution is re
 1. A sophisticated DeFi trader runs a highly optimised execution client, locally clearing the transaction queue well in advance of the network—setting the stage for HFT DeFi.
 2. A custodial platform filters the queue for only those transactions sent to one of their EOAs, immediately crediting user balances.
 
-## Specification
+## Description
 
-### Transaction queue
-
-#### Pushing transactions
-
-Standard, synchronous execution couples a block to the ordered set of transactions to be executed in said block.
-Instead, let there be a FIFO queue of all known, valid transactions—the specifics of "validity" will be addressed later.
-Under SAE, a block's ordered transactions instead constitute those to be pushed to the queue
-A transaction is said to be _included_ when a block builder adds it to a block and _accepted_ once consensus, performed over blocks, agrees to add it to the queue.
-We refer to the ordered set of enqueued transactions as a _tranche_.
-
-#### Clearing the queue
-
-For a block indexed by its height $B$, let its timestamp be $t_B$, measured at per-second resolution.
-We now introduce the concept of a _chunk_ of executed transactions, indexed by its timestamp $t_C$, at the same resolution.
-Whereas proposers _build_ blocks, execution is said to _fill_ chunks and a chunk is considered full when the first of two criteria is met:
-
-1. The queue accepted by time $t_C$ is exhausted; i.e. the queue as at the last block with a timestamp $t_B \le t_C$; or
-2. The chunk's remaining gas limit is insufficient for the next transaction in the queue.
-
-As there is one chunk per second, the gas limit is simply the gas capacity added per second, $R$, of ACPs 103 and 176.
-
-A chunk that is filled under criterion (2) may have leftover capacity due to imperfect packing and MUST _donate_ this residual capacity to the next chunk to allow for full utilisation of the chain's gas throughput.
- This is not to say that execution of the queue should be paused until the next second, but that the transaction's allocated chunk may well be in the future.
-For clarification, see the [alternative framing of chunk filling](#alternative-framing-of-chunk-filling).
-
-> [!NOTE]
-> A side effect of chunk donation and when it is invoked is that transactions using more than a single chunk of gas MAY induce empty _interim_ chunks.
-
-> [!WARNING]
-> A chunk filled due to queue exhaustion MUST NOT donate remaining capacity as this would result in excess load since the next known transaction won't be available for immediate execution.
-
-A completed chunk is comprised of (a) the updated state root; and (b) the set of receipts for transactions executed in the chunk.
-In addition to interim chunks, a chunk MAY also be empty if the queue was exhausted by the previous chunk and no block was agreed on by the next second.
-An empty chunk, by definition, has an empty set of receipts and the same state root as its predecessor.
-
-#### Recording state
-
-A block with timestamp $t_B$ MUST record the post-execution state root with a delay of exactly $d$ seconds, i.e. that which was determined by the (possibly empty) chunk at time $t_C = t_B - d$.
-Similarly, it MUST record the transaction-receipt root for all transactions executed as part of chunks in the half-open range $t_C \in (t_{B-1} - d, t_B - d]$.
-It is at this point that a transaction is said to be _settled_ on the blockchain.
-
-#### Terminology recap
-
-In summary, a transaction is _included_ when added to a _built_ block.
-It is later _accepted_ after consensus agrees upon the block in which it was included, enqueuing the transaction (as part of the block's _tranche_) for later _execution_ in a chunk.
-The chunk is _full_ when it exhausts either the queue or its gas limit, and the transaction is _settled_ when its receipt is part of a later block agreed upon by consensus.
-While the delay between execution and settlement is always $d$ seconds, the time between acceptance and execution is variable.
-Note, however, that the validity checks we now describe mean that acceptance is a guarantee of eventual settlement in a deterministic but as yet unknown block.
+In standard, synchronous, execution a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is _executed_. After _execution_, the block is _accepted_ by consensus. The act of _accepting_ a block immediately _settles_ all transactions in the block by including the transaction execution results.
 
 ```mermaid
 flowchart LR
-    I[Included] --> A[Accepted]
+    I[Proposed] --> E[Executed] --> A[Accepted/Settled]
+```
+
+Under SAE, a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is verified that later _execution_ will succeed. The block is then _accepted_ by consensus. The act of _accepting_ a block _enqueues_ the block to be _executed_. After the block is _executed_, a following block will reference the execution results and _settle_ all transactions in the _executed_ block.
+
+```mermaid
+flowchart LR
+    I[Proposed] --> A[Accepted]
     A -->|variable delay| E[Executed]
-    E -->|d seconds| S[Settled]
+    E -->|τ seconds| S[Settled]
     A -. guarantees .-> S
 ```
 
-> [!NOTE]
-> The guarantee provides no assurance about whether or not a transaction will revert nor whether its computation will run out of gas by reaching the specified limit.
-> However, this is not a concern for EOA-to-EOA transfers of value so such transactions are guaranteed in totality.
+### Block lifecycle
 
-### Updating gas price
+#### Proposing blocks
+
+The validator selection mechanism for block production is unchanged. However, block builders are no longer expected to execute transactions during block building.
+
+The block builder is expected to include transactions based on the most recently settled state and to apply worst-case bounds on the execution of the ancestor blocks prior to the most recently settled block.
+
+The worst-case bounds enforce minimum balances of sender accounts and the maximum required base fee. The worst-case bounds are described [below](#block-validity-and-building).
+
+Prior to adding a proposed block to consensus, all validators MUST verify that the block builder correctly enforced the worst-case bounds while building the block. This guarantees that the block can be executed successfully if it is accepted.
+
+> [!NOTE]
+> The worst-case bounds guarantee does not provide assurance about whether or not a transaction will revert nor whether its computation will run out of gas by reaching the specified limit. The verification only ensures the transaction is capable of paying for the accrued fees.
+
+#### Accepting blocks
+
+Once a block is marked as accepted by consensus, the block is enqueued in a FIFO execution queue.
+
+#### Executing blocks
+
+There is a constantly alive block executor whose job is to execute blocks taken off the FIFO execution queue.
+
+In addition to executing the blocks, the block executor provides deterministic timestamps for the beginning and end of execution of a block.
+
+Time is accordingly measured in two ways by the block executor.
+
+1. The timestamp included in the block header.
+2. The amount of gas charged during the execution of blocks.
+
+> [!NOTE]
+> Execution timestamps are more granular than block header timestamps to allow sub-second block execution times.
+
+As soon as there is a block available to execute on the execution queue, the block executor starts processing the block.
+
+If the block executor's current timestamp is prior to the current block's timestamp, the block executor's timestamp is advanced to the block's timestamp.
+
+The block is then executed on top of the last executed (not settled) state.
+
+After executing the block, the block executor advances its timestamp based on the gas usage of the block.
+
+The block's execution time is now timestamped and the block is available to be settled.
+
+#### Settling blocks
+
+Previously executed blocks are settled by the acceptance of a new block whose timestamp is greater than or equal to the execution time of a prior block plus a constant additional delay.
+
+The additional delay amortises any spurious slowdowns the block executor may have encountered.
+
+## Specification
+
+### Background
 
 ACP-103 introduced the following variables for calculating the gas price:
 
@@ -118,49 +125,122 @@ ACP-103 introduced the following variables for calculating the gas price:
 
 </div>
 
-ACP-176 set $R = 2T$ and provided a mechanism to make $T$ dynamic.
+ACP-176 provided a mechanism to make $T$ dynamic and set:
+
+$$
+\begin{align}
+R &= 2 \cdot T \\
+K &= 87 \cdot T
+\end{align}
+$$
+
 The _excess_ actual consumption $x \ge 0$ beyond the target $T$ is tracked via numerical integration and used to calculate the gas price as:
 
 $$M \cdot \exp\left(\frac{x}{K}\right)$$
 
-While ACPs 103 and 176 compute this price at the resolution of a single block, we can instead integrate at the resolution of a single transaction with equivalent pricing dynamics.
-Exploiting the proportionality of $R = pT$ with $p \ge 1$, for a transaction consuming $g$ gas, the excess is increased:
+### Gas charged
 
-$$x := x + \frac{g \cdot (p-1)}{p}$$
+We introduce $g_L$, $g_U$, and $g_C$ as the gas _limit_, _used_, and _charged_ per transaction, respectively. We define
 
-and the gas price is updated immediately after execution, according to the same formula.
-When the transaction queue is drained and a chunk has a gas _surplus_ of $0 \le s \le R$, the excess is decreased:
+$$
+g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)
+$$
 
-$$x := \max\left(x-\frac{s}{p}, 0\right)$$
-
-and the gas price is updated before the next chunk.
-With the current $p = 2$, half of all gas consumed is added to excess while half of all surplus is deducted.
+where $\lambda$ enforces a lower bound on the gas charged based on the gas limit.
 
 > [!NOTE]
-> The ACP-103 concept of a leaky gas bucket with capacity $C$ is an emergent phenomenon in SAE.
+> $\dfrac{g_L}{\lambda}$ is rounded up by actually calculating $\dfrac{g_L + \lambda - 1}{\lambda}$
 
-### JSON RPC methods
+In all cases that execution used to refer to gas usage, we will from now on consider gas charged. For example, the gas excess $x$ will be modified by $g_C$ rather than $g_U$.
 
-Although asynchronous execution decouples the transactions and receipts recorded by a specific block, APIs MUST NOT alter their behavior to mirror this.
-In particular, the API method `eth_getBlockReceipts` MUST return the receipts corresponding to the block's transactions, not the receipts settled in the block.
+### Queue size
 
-To achieve this, we first define the _executed_ and _settled_ states for blocks.
-A block is initially _accepted_ by consensus, enqueuing its tranche of transactions.
-Once the last transaction in the tranche has been executed, the block itself is considered to be executed.
-When the same transaction is settled then so too is the block considered settled.
+The constant time delay between execution and settlement is defined as $\tau$ seconds.
 
-#### Named blocks
+The maximum allowed size of the execution queue is defined as:
 
-The Ethereum Mainnet APIs allow for retrieving blocks by named parameters that the API server resolves based on their consensus mechanism.
-Other than the _earliest_ (genesis) named block, which MUST be interpreted in the same manner, all other named blocks are mapped to SAE in terms of the execution status of all block transactions and MUST be interpreted as follows:
+$$
+\omega ~:= R \cdot \tau \cdot \lambda
+$$
 
- * _pending_: the most recently _accepted_ block;
- * _latest_: the block that was most recently _executed_;
- * _safe_ and _finalized_: the block that was most recently _settled_.
+Any block that could cause the total sum of gas limits for transactions in the execution queue to exceed $\omega$ MUST be considered invalid.
+
+### Block executor
+
+During the activation of SAE, the block executor's timestamp, $t_e$, is initialised to the timestamp of the last accepted block.
+
+Prior to executing a block which includes timestamp $t_b$, the executor's timestamp and excess is updated:
+
+$$
+\begin{align}
+\Delta{t} &~:= \max\left(t_e, t_b\right) - t_e \\
+t_e &~:= t_e + \Delta{t} \\
+x &~:= \max\left(x - T \cdot \Delta{t}, 0\right) \\
+\end{align}
+$$
+
+The block is then executed with the gas price calculated by the current value of $x$.
+
+After executing a block which was charged $g_C$ gas, the executor's timestamp and excess is updated:
+
+$$
+\begin{align}
+t_e &~:= t_e + \frac{g_C}{R} \\
+x &~:= x + \frac{g_C}{2} \\
+\end{align}
+$$
 
 > [!NOTE]
-> The finality guarantees of Snowman consensus remove any distinction between _safe_ and _finalized_. 
-> Furthermore, the _latest_ block is not at risk of re-org, only of a negligible risk of data corruption local to the API node.
+> The update rule here assumes that $t_e$ is a timestamp that can track the passage of time both by gas and by wall-clock time. $\frac{g_C}{R}$ MUST NOT be simply rounded. Rather, the gas accumulation should be left as a fraction.
+
+$t_e$ is now this block's execution timestamp.
+
+### Handling gas target changes
+
+When a block is produced which modifies $T$, both the consensus thread and the execution thread will update to the modified $T$ after their own handling of the block.
+
+For example, restrictions of the queue size MUST be calculated based on the parent block's $T$.
+
+Similarly, the time spent executing a block MUST be calculated based on the parent block's $T$.
+
+### Block settlement
+
+For a _proposed_ block which includes timestamp $t_b$, all ancestors whose execution timestamp $t_e$ is $t_e + \tau \leq t_b$ are considered settled.
+
+The _proposed_ block must include the `stateRoot` produced by the execution of the most recently settled block.
+
+For any _newly_ settled blocks, the _proposed_ block must include all execution artifacts:
+- `receiptsRoot`
+- `logsBloom`
+- `gasUsed`
+
+> [!NOTE]
+> If the block executor has fallen behind, the node may not be able to determine precisely which ancestors should be considered settled. If this occurs, validators MUST allow the block executor to catch up prior to deciding the block's validity.
+
+### Block validity and building
+
+After determining which blocks to settle, all remaining ancestors of the new block must be inspected to determine the worst-case bounds on $x$ and account balances. Account nonces are able to be known immediately.
+
+The worst-case bound on $x$ can be calculated by following the block executor update rules using $g_L$ rather than $g_C$.
+
+The worst-case bound on account balances can be calculated by charging the worst-case gas cost to the sender of a transaction along with deducting the value of the transaction from the sender's account balance.
+
+The `baseFeePerGas` field must be populated to the gas price based on the worst-case bound on $x$ at the start of block execution.
+
+### Configuration Parameters
+
+As noted above, SAE depends on the values of $\tau$ and $\lambda$ to be set as parameters and the value of $\omega$ is derived from $T$. 
+
+Parameters to specify for the C-Chain are:
+
+<div align="center">
+
+| Parameter | Description | C-Chain Configuration|
+| - | - | - |
+| $\tau$ | duration between execution and settlement | $5s$ |
+| $\lambda$ | minimum conversion from gas limit to gas charged | $2$ |
+
+</div>
 
 ## Backwards Compatibility
 
@@ -181,27 +261,25 @@ A reference implementation is still a work-in-progress. This ACP will be updated
 
 ### Worst-case transaction validity
 
-To avoid a DoS vulnerability on execution, we require an upper bound on transaction gas cost (i.e. amount $\times$ price).
-Beyond regular requirements for transaction validity (e.g. nonce, signature, etc.) we therefore introduce "worst-case cost" validity.
+To avoid a DoS vulnerability on execution, we require an upper bound on transaction gas cost (i.e. amount $\times$ price) beyond the regular requirements for transaction validity (e.g. nonce, signature, etc.). We therefore introduced "worst-case cost" validity.
 
-Consider a hypothetical situation in which all enqueued transactions use their entire gas limit during execution.
-We can prove that, for every transaction, this would result in the greatest possible:
+We can prove that, for every transaction, assuming the usage of their full gas limit during execution results in the greatest possible:
 
 1. Consumption of gas units (by definition of the gas limit); and
 2. Gas excess $x$ (and therefore gas price) at the time of execution.
 
-For a queue of transactions $Q = \\{i\\}_ {i \ge 0}$ the gas excess $x_j$ immediately prior to execution of transaction $j \in Q$ is a monotonic, non-decreasing function of the gas usage of all preceding transactions in the queue; i.e. $x_j~:=~f(\\{g_i\\}_{i<j})$.
+For a queue of blocks $Q = \\{i\\}_ {i \ge 0}$ the gas excess $x_j$ immediately prior to execution of block $j \in Q$ is a monotonic, non-decreasing function of the gas usage of all preceding blocks in the queue; i.e. $x_j~:=~f(\\{g_i\\}_{i<j})$.
 
-To see this, consider transaction $0 \le k<j$ consuming gas $g_k$.
+To see this, consider block $0 \le k<j$ consuming gas $g_k$.
 A decrease in $g_k$ reduces the immediate increase of $x$.
-Furthermore, this lowered consumption can never reduce a chunk's gas surplus and hence any decrease of $x$ is $\ge$ predicted.
-The excess, and hence gas price, for every later transaction $x_{i>k}$ is therefore reduced:
+Furthermore, this lowered consumption can only further reduce $x$ at the start of executing the next block. Hence any decrease of $x$ is $\ge$ predicted.
+The excess, and hence gas price, for every later block $x_{i>k}$ is therefore reduced:
 
 $$
 \downarrow g_k \implies
 \begin{cases}
-    \downarrow \frac{g \cdot (p-1)}{p} \\
-    \uparrow \frac{s}{p}
+    \downarrow \frac{g}{2} \\
+    \downarrow \frac{g}{R}
 \end{cases}
 \implies \downarrow \Delta x_k
 \implies \downarrow M \cdot \exp\left(\frac{x_{i>k}}{K}\right)
@@ -216,21 +294,20 @@ Transaction _acceptance_ under worst-case cost validity is therefore a guarantee
 ### Queue DoS protection
 
 Worst-case cost validity only protects against DoS at the point of execution but leaves the queue vulnerable to high-limit, low-usage transactions.
-For example, a malicious user could send a transfer-only transaction (21k gas) with a limit set to multiple chunks.
-Although they would have to have sufficient funds to theoretically pay for all the chunks, they would never actually be charged this amount. Pushing a sufficient number of such transactions to the queue would artificially inflate the worst-case cost of other users.
 
-Gas limits are typically set higher than expected gas used to allow for a buffer should gas estimates be imprecise.
-A lower bound of 50% of the specified limit, for example, would allow for a 100% buffer on estimates without penalising the sender, while still disincentivising falsely high limits.
+For example, a malicious user could send a transfer-only transaction (21k gas) with a limit set consume the block's full gas limit.
+
+Although they would have to have sufficient funds to theoretically pay for all the reserved gas, they would never actually be charged this amount. Pushing a sufficient number of such transactions to the queue would artificially inflate the worst-case cost of other users.
+
+Therefore, the gas charged was modified from being equal to the gas usage to the above $g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)$
+
+Gas limits are typically set higher than expected gas used to allow for a buffer should gas estimates be imprecise. So $\lambda$ should not be set to $1$. However, setting $\lambda$ to $\infty$ would allow users to fill the queue without paying fees.
+
+Setting $\lambda ~:= 2$ allows for a 100% buffer on gas usage estimates without penalising the sender, while still disincentivising falsely high limits.
 
 #### Upper bound on queue DoS
 
-With $R$ (for rate) as already defined (gas capacity per second), we introduce $g_L$, $g_U$, and $g_C$ as gas _limit_, _used_ and _charged_ per transaction, respectively, and
-
-$$
-g_C := \max(g_U, \lambda \cdot g_L)
-$$
-
-where $\lambda$ enforces a lower bound on the charge.
+With $R$ (gas capacity per second) for rate and $g_C$ (gas charged) as already defined.
 
 The actual gas excess $x_A$ has an upper bound of the worst-case excess $x_W$, both of which can be used to calculate respective base fees $f_A$ and $f_W$ (the variable element of gas prices) from the existing exponential function:
 
@@ -249,22 +326,24 @@ by maximizing $\Sigma_{\forall i} (g_L - g_U)_i$ to maximize $x_W - x_A$.
 > [!TIP]
 > Although $D$ shadows a variable in ACP-176, that one is very different to anything here so there won't be confusion.
 
-Recall that the proportionality $p$ of capacity per second and target gas per second ($R = pT$) results in increasing excess such that
+Recall that the proportionality of capacity per second and target gas per second ($R = 2 \cdot T$) results in increasing excess such that
 
 $$
-x := x + \frac{g (p-1)}{p}.
+x := x + \frac{g}{2}
 $$
 
-If we allow the queue to have a bandwidth of $R\lambda^{-1}$ gas/second and limit its length $\tau$ seconds or a back-pressure window of $\omega = \tau R \lambda^{-1}$ gas, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
+Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
 
 $$
 \begin{align}
-\Delta x_A &\ge \lambda \cdot \omega \cdot \frac{p-1}{p} \\
-\Delta x_W &= \omega \cdot \frac{p-1}{p} \\
-\Delta x_W - \Delta x_A &\le (1-\lambda) \cdot \omega \cdot \frac{p-1}{p} \\
-&= (1-\lambda) \cdot \frac{\tau R}{\lambda} \cdot \frac{p-1}{p} \\
-&= \frac{1-\lambda}{\lambda} \cdot \tau \cdot p T \cdot \frac{p-1}{p} \\
-&= \frac{1-\lambda}{\lambda} \cdot \tau \cdot T \cdot (p-1).
+\Delta x_A &\ge \frac{\omega}{2 \cdot \lambda} \\
+\Delta x_W &= \frac{\omega}{2} \\
+\Delta x_W - \Delta x_A &\le \frac{\omega}{2} - \frac{\omega}{2 \cdot \lambda} \\
+&= (1-\frac{1}{\lambda}) \cdot \frac{\omega}{2} \\
+&= (1-\frac{1}{\lambda}) \cdot \frac{R \cdot \tau \cdot \lambda}{2} \\
+&= (\lambda-1) \cdot \frac{R \cdot \tau \cdot}{2} \\
+&= (\lambda-1) \cdot \frac{2 \cdot T \cdot \tau}{2} \\
+&= (\lambda-1) \cdot T \cdot \tau \\
 \end{align}
 $$
 
@@ -281,89 +360,46 @@ $$
 When the queue is empty (i.e. the execution stream has caught up with accepted transactions), the worst-case fee estimate $f_W$ is known to be the actual base fee $f_A$; i.e. $Q = \emptyset \implies D=1$. The previous bound on $\Delta x_W - \Delta x_A$ also bounds Mallory's ability such that:
 
 $$
-D \le \exp \left( \frac{\frac{1-\lambda}{\lambda} \cdot \tau \cdot T \cdot (p-1)}{K} \right).
+\begin{align}
+D &\le \exp \left( \frac{(\lambda-1) \cdot T \cdot \tau}{K} \right)\\
+&= \exp \left( \frac{(\lambda-1) \cdot T \cdot \tau}{87 \cdot T} \right)\\
+&= \exp \left( \frac{(\lambda-1) \cdot \tau}{87} \right)\\
+\end{align}
 $$
+
+Therefore, for the values suggested by this ACP:
+
+$$
+\begin{align}
+D &\le \exp \left( \frac{(2-1) \cdot 5}{87} \right)\\
+&= \exp \left( \frac{5}{87} \right)\\
+&\simeq 1.06\\
+\end{align}
+$$
+
+In summary, Mallory can require users to increase their gas price by at most ~6%. In practice, the gas price often fluctuates more than 6% on a regular basis. Therefore, this does not appear to be a significant attack vector.
+
+However, any deviation that dislodges the gas price bidding mechanism from a true bidding mechanism is of note.
 
 ## Appendix
 
-### Alternative framing of chunk filling
+### JSON RPC methods
 
-The criteria for chunk filling define an online algorithm that is equivalent to this offline perspective.
+Although asynchronous execution decouples the transactions and receipts recorded by a specific block, APIs MUST NOT alter their behavior to mirror this.
+In particular, the API method `eth_getBlockReceipts` MUST return the receipts corresponding to the block's transactions, not the receipts settled in the block.
 
-Consider a queue for which actual gas consumption is known for all transactions, and said consumption exceeds the chain capacity so the queue is never exhausted.
-Filling can now be viewed as an allocation problem, selecting a deterministic chunk for each transaction.
-As each round of consensus is required to record a specific chunk, no theoretical chunk can end earlier than any of its assigned transactions.
-A transaction is therefore allocated to the theoretical chunk during which its execution completes.
+#### Named blocks
 
-> [!TIP]
-> As chunk capacity is measured in terms of a gas _rate_, time and gas can be thought of interchangeably along the x-axis.
-> Chunks are 1-indexed to reflect the time at which they end.
+The Ethereum Mainnet APIs allow for retrieving blocks by named parameters that the API server resolves based on their consensus mechanism.
+Other than the _earliest_ (genesis) named block, which MUST be interpreted in the same manner, all other named blocks are mapped to SAE in terms of the execution status of blocks and MUST be interpreted as follows:
 
-```mermaid
----
-displayMode: compact
----
-gantt
-    title Theoretical chunks
-    dateFormat  x
-    axisFormat %S
-    tickInterval 1second
-    section Chunks
-    c1  :c1, 0, 1s
-    c2  :c2, after c1, 1s
-    c3  :c3, after c2, 1s
-    c4  :c4, after c3, 1s
-    c5  :c5, after c4, 1s
-    c6  :c6, after c5, 1s
-    section Transactions
-    t0  :t0, 0, 0.4s
-    t1  :t1, after t0, 0.4s
-    t2  :t2, after t1, 0.4s
-    t3  :t3, after t2, 0.8s
-    t4  :t4, after t3, 0.9s
-    t5  :t5, after t4, 2s
-    t6  :t6, after t5, 1.1s
-    section Donations
-    c1->c2  : 800, 0.2s
-    c3->c4  : 2900, 0.1s
-    c4->c5  : 2900, 1.1s
-    c5->c6  : 4900, 0.1s
-```
+ * _pending_: the most recently _accepted_ block;
+ * _latest_: the block that was most recently _executed_;
+ * _safe_ and _finalized_: the block that was most recently _settled_.
 
-1. Total gas used by transactions `t0` and `t1` is less than a single chunk so they are allocated to `c1`.
-2. Addition of `t2` would exceed `c1` capacity so it is instead allocated to `c2`.
-3. Note the necessary "donation" of `c1`'s residual capacity to `c2`, allowing for allocation of `t3` as well.
-4. Transaction `t4` is the only one that can fit into chunk `c3`.
-5. The large transaction `t5` requires more than a single chunk of gas, resulting in `c4` being an empty _interim_ chunk and the allocation of `t5` to `c5`.
-    1. The residual of `c3` was first donated to `c4`, which was unable to fit the next transaction, resulting in transitive donation to `c5`.
-6. Even with its double donation, `c5` no longer has sufficient capacity for the final transaction `t6`, which is in `c6`.
-
-Note that the donation-adjusted chunks fully utilise chain capacity while also completing execution no later than their respective timestamps, which would otherwise be detrimental to consensus.
-
-```mermaid
----
-displayMode: compact
----
-gantt
-    title Donation-adjusted chunks
-    dateFormat x
-    axisFormat %S
-    tickInterval 1second
-    section Chunks
-    c1  :a1, 0, 0.8s
-    c2  :a2, after a1, 1.2s
-    c3  :a3, after a2, 0.9s
-    c5  :a5, after a3, 2s
-    c6  :a6, after a5, 1.1s
-    section Transactions
-    t0  :t0, 0, 0.4s
-    t1  :t1, after t0, 0.4s
-    t2  :t2, after t1, 0.4s
-    t3  :t3, after t2, 0.8s
-    t4  :t4, after t3, 0.9s
-    t5  :t5, after t4, 2s
-    t6  :t6, after t5, 1.1s
-```
+> [!NOTE]
+> The finality guarantees of Snowman consensus remove any distinction between _safe_ and _finalized_. 
+> Furthermore, the _latest_ block is not at risk of re-org, only of a negligible risk of data corruption local to the API node.
 
 ### Streaming vs regular asynchronous pipelining
 
@@ -393,7 +429,7 @@ As EOA-to-EOA transfers of value are entirely guaranteed upon _acceptance_, bloc
 
 A reliable marker of such transactions is a gas limit of 21,000 as this is an indication from the sender that they do not intend to execute bytecode.
 
-This could delay the ability to issue transactions that depend on these EOA-to-EOA transfers.
+However, this could delay the ability to issue transactions that depend on these EOA-to-EOA transfers.
 
 Block builders are free to make their own decisions around which transactions to include.
 
