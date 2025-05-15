@@ -212,7 +212,7 @@ Note that $t_e$ is not an integer as it tracks fractional seconds with gas consu
 
 The _proposed_ block MUST include the `stateRoot` produced by the execution of the most recently settled block.
 
-For any _newly_ settled blocks, the _proposed_ block must include all execution artifacts:
+For any _newly_ settled blocks, the _proposed_ block MUST include all execution artifacts:
 - `receiptsRoot`
 - `logsBloom`
 - `gasUsed`
