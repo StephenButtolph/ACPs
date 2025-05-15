@@ -336,7 +336,7 @@ $$
 x := x + g \cdot \frac{(R - T)}{R}
 $$
 
-Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess:
+Since we limit the size of the queue to $\omega$, we can derive an upper bound on the difference in the changes to worst-case and actual gas excess caused by the transactions in the queue:
 
 $$
 \begin{align}
