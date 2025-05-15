@@ -65,7 +65,7 @@ flowchart LR
 
 The validator selection mechanism for block production is unchanged. However, block builders are no longer expected to execute transactions during block building.
 
-The block builder is expected to include transactions based on the most recently settled state and to apply worst-case bounds on the execution of the ancestor blocks prior to the most recently settled block.
+The block builder is expected to include transactions by building upon the most recently settled state and to apply worst-case bounds on the execution of the ancestor blocks prior to the most recently settled block.
 
 The worst-case bounds enforce minimum balances of sender accounts and the maximum required base fee. The worst-case bounds are described [below](#block-validity-and-building).
 
