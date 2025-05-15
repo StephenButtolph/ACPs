@@ -407,28 +407,6 @@ Other than the _earliest_ (genesis) named block, which MUST be interpreted in th
 > The finality guarantees of Snowman consensus remove any distinction between _safe_ and _finalized_. 
 > Furthermore, the _latest_ block is not at risk of re-org, only of a negligible risk of data corruption local to the API node.
 
-### Streaming vs regular asynchronous pipelining
-
-```mermaid
-sankey-beta
-  Block 0,Q,7
-  B1,Q,10
-  B2,Q,13
-  B3,Q,15
-  B4,Q,8
-  B5,Q,21
-  B6,Q,2
-  B7,Q,0
-  Q,Chunk 0,7
-  Q,C1,10
-  Q,C2,10
-  Q,C3,10
-  Q,C4,10
-  Q,C5,10
-  Q,C6,10
-  Q,C7,9
-```
-
 ### Observations around transaction prioritisation
 
 As EOA-to-EOA transfers of value are entirely guaranteed upon _acceptance_, block builders MAY choose to prioritise other transactions for earlier execution.
