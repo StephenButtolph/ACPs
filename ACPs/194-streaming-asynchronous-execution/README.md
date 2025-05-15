@@ -307,7 +307,7 @@ Therefore, the gas charged was modified from being equal to the gas usage to the
 
 Gas limits are typically set higher than expected gas used to allow for a buffer should gas estimates be imprecise. So $\lambda$ should not be set to $1$. However, setting $\lambda$ to $\infty$ would allow users to fill the queue without paying fees.
 
-Setting $\lambda ~:= 2$ allows for a 100% buffer on gas usage estimates without penalising the sender, while still disincentivising falsely high limits.
+Setting $\lambda ~:= 2$ allows for a 100% buffer on gas-usage estimates without penalising the sender, while still disincentivising falsely high limits.
 
 #### Upper bound on queue DoS
 
