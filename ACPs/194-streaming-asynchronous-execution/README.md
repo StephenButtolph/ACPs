@@ -92,7 +92,7 @@ Time is measured two ways by the block executor:
 > [!NOTE]
 > Execution timestamps are more granular than block header timestamps to allow sub-second block execution times.
 
-As soon as there is a block available to execute on the execution queue, the block executor starts processing the block.
+As soon as there is a block available in the execution queue, the block executor starts processing the block.
 
 If the block executor's current timestamp is prior to the current block's timestamp, the block executor's timestamp is advanced to the block's timestamp.
 
