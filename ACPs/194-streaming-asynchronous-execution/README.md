@@ -299,7 +299,7 @@ Transaction _acceptance_ under worst-case cost validity is therefore a guarantee
 
 Worst-case cost validity only protects against DoS at the point of execution but leaves the queue vulnerable to high-limit, low-usage transactions.
 
-For example, a malicious user could send a transfer-only transaction (21k gas) with a limit set consume the block's full gas limit.
+For example, a malicious user could send a transfer-only transaction (21k gas) with a limit set to consume the block's full gas limit.
 
 Although they would have to have sufficient funds to theoretically pay for all the reserved gas, they would never actually be charged this amount. Pushing a sufficient number of such transactions to the queue would artificially inflate the worst-case cost of other users.
 
