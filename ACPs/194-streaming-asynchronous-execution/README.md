@@ -99,7 +99,7 @@ Advancing the timestamp in this scenario results in unused gas capacity, reducin
 
 The block is then executed on top of the last executed (not settled) state.
 
-After executing the block, the block executor advances its timestamp based on the gas usage of the block.
+After executing the block, the executor advances its timestamp based on the gas usage of the block, also increasing the gas _excess_ for the pricing algorithm.
 
 The block's execution time is now timestamped and the block is available to be settled.
 
