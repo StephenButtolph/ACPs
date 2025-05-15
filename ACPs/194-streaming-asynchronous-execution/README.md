@@ -42,7 +42,7 @@ This ACP does not introduce these, but some form of asynchronous execution is re
 
 ## Description
 
-In standard, synchronous, execution a block is first _proposed_ by a validator. In order for validators to consider the block valid to insert into the consensus process, it is _executed_. After _execution_, the block is _accepted_ by consensus. The act of _accepting_ a block immediately _settles_ all transactions in the block by including the transaction execution results.
+In all execution models, a block is _proposed_ and then verified by validators before being _accepted_. To assess a block's validity in _synchronous_ execution, its transactions are first _executed_ and only then _accepted_ by consensus. This immediately and implicitly _settles_ all of the block's transactions by including their execution results at the time of _acceptance_.
 
 ```mermaid
 flowchart LR
