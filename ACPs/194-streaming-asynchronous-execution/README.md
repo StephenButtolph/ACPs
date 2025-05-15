@@ -182,7 +182,7 @@ $$
 
 The block is then executed with the gas price calculated from the current value of $x$.
 
-After executing a block which was charged $g_C$ gas, the executor's timestamp and excess is updated:
+After executing a block that charged $g_C$ gas in total, the executor's timestamp and excess is updated:
 
 $$
 \begin{align}
