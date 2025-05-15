@@ -106,7 +106,7 @@ The block's execution time is now timestamped and the block is available to be s
 
 Previously executed blocks are settled by the acceptance of a new block whose timestamp is greater than or equal to the execution time of a prior block plus a constant additional delay.
 
-The additional delay amortises any spurious slowdowns the block executor may have encountered.
+The additional delay amortises any sporadic slowdowns the block executor may have encountered.
 
 ## Specification
 
