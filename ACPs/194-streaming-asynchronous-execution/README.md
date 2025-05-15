@@ -311,7 +311,7 @@ Setting $\lambda ~:= 2$ allows for a 100% buffer on gas-usage estimates without 
 
 #### Upper bound on queue DoS
 
-With $R$ (gas capacity per second) for rate and $g_C$ (gas charged) as already defined.
+Recall $R$ (gas capacity per second) for rate and $g_C$ (gas charged) as already defined.
 
 The actual gas excess $x_A$ has an upper bound of the worst-case excess $x_W$, both of which can be used to calculate respective base fees $f_A$ and $f_W$ (the variable element of gas prices) from the existing exponential function:
 
