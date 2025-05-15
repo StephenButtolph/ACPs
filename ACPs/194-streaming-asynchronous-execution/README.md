@@ -80,7 +80,7 @@ Once a block is marked as accepted by consensus, the block is put in a FIFO exec
 
 #### Executing blocks
 
-There is a constantly alive block executor whose job is to execute blocks taken off the FIFO execution queue.
+Each client runs a block executor in parallel, which constantly executes the blocks from the FIFO queue.
 
 In addition to executing the blocks, the block executor provides deterministic timestamps for the beginning and end of execution of a block.
 
