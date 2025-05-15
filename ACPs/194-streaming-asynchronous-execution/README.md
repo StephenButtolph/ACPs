@@ -76,7 +76,7 @@ Prior to adding a proposed block to consensus, all validators MUST verify that t
 
 #### Accepting blocks
 
-Once a block is marked as accepted by consensus, the block is enqueued in a FIFO execution queue.
+Once a block is marked as accepted by consensus, the block is put in a FIFO execution queue.
 
 #### Executing blocks
 
