@@ -84,7 +84,7 @@ There is a constantly alive block executor whose job is to execute blocks taken 
 
 In addition to executing the blocks, the block executor provides deterministic timestamps for the beginning and end of execution of a block.
 
-Time is accordingly measured in two ways by the block executor.
+Time is measured two ways by the block executor:
 
 1. The timestamp included in the block header.
 2. The amount of gas charged during the execution of blocks.
