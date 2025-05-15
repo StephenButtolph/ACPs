@@ -155,7 +155,7 @@ In all previous instances where execution referenced gas used, from now on, we w
 
 ### Queue size
 
-The constant time delay between execution and settlement is defined as $\tau$ seconds.
+The constant time delay between block execution and settlement is defined as $\tau$ seconds.
 
 The maximum allowed size of the execution queue is defined as:
 
