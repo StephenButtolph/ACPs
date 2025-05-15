@@ -168,7 +168,7 @@ Any block that could cause the total sum of gas limits for transactions in the e
 
 ### Block executor
 
-During the activation of SAE, the block executor's timestamp, $t_e$, is initialised to the timestamp of the last accepted block.
+During the activation of SAE, the block executor's timestamp $t_e$ is initialised to the timestamp of the last accepted block.
 
 Prior to executing a block with timestamp $t_b$, the executor's timestamp and excess is updated:
 
