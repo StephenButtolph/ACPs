@@ -94,7 +94,8 @@ Time is measured two ways by the block executor:
 
 As soon as there is a block available in the execution queue, the block executor starts processing the block.
 
-If the block executor's current timestamp is prior to the current block's timestamp, the block executor's timestamp is advanced to the block's timestamp.
+If the executor's current timestamp is prior to the current block's timestamp, the executor's timestamp is advanced to match the block's.
+Advancing the timestamp in this scenario results in unused gas capacity, reducing the gas _excess_ from which the price is determined.
 
 The block is then executed on top of the last executed (not settled) state.
 
