@@ -151,7 +151,7 @@ where $\lambda$ enforces a lower bound on the gas charged based on the gas limit
 > [!NOTE]
 > $\dfrac{g_L}{\lambda}$ is rounded up by actually calculating $\dfrac{g_L + \lambda - 1}{\lambda}$
 
-In all cases that execution used to refer to gas usage, we will from now on consider gas charged. For example, the gas excess $x$ will be modified by $g_C$ rather than $g_U$.
+In all previous instances where execution referenced gas used, from now on, we will reference gas charged. For example, the gas excess $x$ will be modified by $g_C$ rather than $g_U$.
 
 ### Queue size
 
