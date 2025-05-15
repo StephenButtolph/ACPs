@@ -207,7 +207,8 @@ Similarly, the time spent executing a block MUST be calculated based on the pare
 
 ### Block settlement
 
-For a _proposed_ block which includes timestamp $t_b$, all ancestors whose execution timestamp $t_e$ is $t_e + \tau \leq t_b$ are considered settled.
+For a _proposed_ block that includes timestamp $t_b$, all ancestors whose execution timestamp $t_e$ is $t_e \leq t_b - \tau$ are considered settled.
+Note that $t_e$ is not an integer as it tracks fractional seconds with gas consumption, which is not the case for $t_b$.
 
 The _proposed_ block must include the `stateRoot` produced by the execution of the most recently settled block.
 
