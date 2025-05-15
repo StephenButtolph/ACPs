@@ -193,7 +193,7 @@ x &~:= x + \Delta{t} \cdot (R - T) \\
 $$
 
 > [!NOTE]
-> The update rule here assumes that $t_e$ is a timestamp that can track the passage of time both by gas and by wall-clock time. $\frac{g_C}{R}$ MUST NOT be simply rounded. Rather, the gas accumulation should be left as a fraction.
+> The update rule here assumes that $t_e$ is a timestamp that tracks the passage of time both by gas and by wall-clock time. $\frac{g_C}{R}$ MUST NOT be simply rounded. Rather, the gas accumulation MUST be left as a fraction.
 
 $t_e$ is now this block's execution timestamp.
 
