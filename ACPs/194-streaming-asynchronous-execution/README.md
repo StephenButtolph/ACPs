@@ -105,7 +105,9 @@ The block's execution time is now timestamped and the block is available to be s
 
 #### Settling blocks
 
-Previously executed blocks are settled by the acceptance of a new block whose timestamp is greater than or equal to the execution time of a prior block plus a constant additional delay.
+Already-executed blocks are settled once a following block that includes the results of the executed block is accepted.
+The results are included by setting the state root to that of the last executed block and the receipt root to that of a MPT of all receipts since last settlement, possibly from more than one block.
+The following block's timestamp is used to determine which blocks to settle—blocks are settled if said timestamp is greater than or equal to the execution time of the executed block plus a constant delay.
 
 The additional delay amortises any sporadic slowdowns the block executor may have encountered.
 
