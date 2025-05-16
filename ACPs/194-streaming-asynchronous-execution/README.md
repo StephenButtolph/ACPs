@@ -270,7 +270,7 @@ A reference implementation is still a work-in-progress. This ACP will be updated
 
 To avoid a DoS vulnerability on execution, we require an upper bound on transaction gas cost (i.e. amount $\times$ price) beyond the regular requirements for transaction validity (e.g. nonce, signature, etc.). We therefore introduced "worst-case cost" validity.
 
-We can prove that, for every transaction, assuming the usage of their full gas limit during execution results in the greatest possible:
+We can prove that if every transaction were to use its full gas limit this would result in the greatest possible:
 
 1. Consumption of gas units (by definition of the gas limit); and
 2. Gas excess $x$ (and therefore gas price) at the time of execution.
