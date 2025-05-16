@@ -219,6 +219,8 @@ For any _newly_ settled blocks, the _proposed_ block MUST include all execution 
 - `logsBloom`
 - `gasUsed`
 
+The receipts root MUST be computed as defined in [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) except that the tree MUST be built from the concatenation of receipts from all blocks being settled.
+
 > [!NOTE]
 > If the block executor has fallen behind, the node may not be able to determine precisely which ancestors should be considered settled. If this occurs, validators MUST allow the block executor to catch up prior to deciding the block's validity.
 
