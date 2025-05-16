@@ -232,7 +232,7 @@ The worst-case bound on $x$ can be calculated by following the block executor up
 
 The worst-case bound on account balances can be calculated by charging the worst-case gas cost to the sender of a transaction along with deducting the value of the transaction from the sender's account balance.
 
-The `baseFeePerGas` field must be populated to the gas price based on the worst-case bound on $x$ at the start of block execution.
+The `baseFeePerGas` field MUST be populated with the gas price based on the worst-case bound on $x$ at the start of block execution.
 
 ### Configuration Parameters
 
