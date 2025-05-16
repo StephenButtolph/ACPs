@@ -286,8 +286,8 @@ The excess, and hence gas price, for every later block $x_{i>k}$ is therefore re
 $$
 \downarrow g_k \implies
 \begin{cases}
-    \downarrow \frac{g}{R} \cdot (R - T) \\
-    \downarrow \frac{g}{R}
+    \downarrow \Delta^+x \propto g_k \\
+    \uparrow \Delta^-x \propto R-g_k
 \end{cases}
 \implies \downarrow \Delta x_k
 \implies \downarrow M \cdot \exp\left(\frac{x_{i>k}}{K}\right)
