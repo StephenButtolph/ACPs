@@ -49,7 +49,7 @@ flowchart LR
     I[Proposed] --> E[Executed] --> A[Accepted/Settled]
 ```
 
-Under SAE, a block is first _proposed_ by a validator. In order for validators to consider the block valid for consensus, it is verified that _execution_ will later succeed. The block is then _accepted_ by consensus. The act of _accepting_ a block _enqueues_ the block to be _executed_. After the block is _executed_, a following block will reference the execution results and _settle_ all transactions in the _executed_ block.
+Under SAE, a block is considered valid if all of its transactions can be paid for when eventually _executed_, after which the block is _accepted_ by consensus. The act of _acceptance_ enqueues the block to be _executed_ asynchronously. In the future, some as-yet-unknown later block will reference the execution results and _settle_ all transactions from the _executed_ block.
 
 ```mermaid
 flowchart LR
