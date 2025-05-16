@@ -309,7 +309,9 @@ Although they would have to have sufficient funds to theoretically pay for all t
 
 Therefore, the gas charged was modified from being equal to the gas usage to the above $g_C := \max\left(g_U, \frac{g_L}{\lambda}\right)$
 
-Gas limits are typically set higher than expected gas used to allow for a buffer should gas estimates be imprecise. So $\lambda$ should not be set to $1$. However, setting $\lambda$ to $\infty$ would allow users to fill the queue without paying fees.
+The gas limit is typically set higher than the predicted gas consumption to allow for a buffer should the prediction be imprecise.
+This precludes setting $\lambda := 1$.
+Conversely, setting $\lambda := \infty$ would allow users to attack the queue with high-limit, low-consumption transactions.
 
 Setting $\lambda ~:= 2$ allows for a 100% buffer on gas-usage estimates without penalising the sender, while still disincentivising falsely high limits.
 
