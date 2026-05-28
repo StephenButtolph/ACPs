@@ -52,13 +52,13 @@ Where:
 
 Both $q_{initial}$ and $D$ are specified in [Activation Parameters](#activation-parameters).
 
-After the execution of transactions in block $b$, the value of $q$ can be increased or decreased by up to $Q$. It must be the case that $\left|\Delta q\right| \leq Q$, or block $b$ is considered invalid. The amount by which $q$ changes after executing block $b$ is specified by the block builder.
+After the execution of transactions in block $b$, the value of $q$ can be increased or decreased by up to $Q$. It MUST be the case that $\left|\Delta q\right| \leq Q$, or block $b$ is considered invalid. The amount by which $q$ changes after executing block $b$ is specified by the block builder.
 
-Block builders (i.e., validators) may set their desired value for $M$ in their configuration via the `min-price-target` setting (specified in wei). Their desired value for $q$ is then calculated locally as:
+Block builders (i.e., validators) MAY set their desired value for $M$ in their configuration via the `min-price-target` setting (specified in wei). Their desired value for $q$ is then calculated locally as:
 
 $$q_{desired} = \left\lceil D \cdot \ln(M_{desired}) \right\rceil$$
 
-Since $q_{desired}$ is only used locally and can be different for each node, it is safe for implementations to approximate the value of $\ln(M_{desired})$ and round the resulting value to the nearest integer. Alternatively, client implementations can choose to use binary search to find the closest integer solution.
+Since $q_{desired}$ is only used locally, it is safe for implementations to approximate the value of $\ln(M_{desired})$ and round the resulting value to the nearest integer. Alternatively, client implementations MAY choose to use binary search to find the closest integer solution.
 
 If a validator does not set `min-price-target`, the validator SHOULD default to the previous block's value of $q$. This matches the abstention default of ACP-176 and ACP-226.
 
@@ -135,7 +135,9 @@ The only value this ACP specifies is `BlocksToDouble`; the remaining values are 
 
 </div>
 
-$D$ is fully determined by the type constraint. The allowed range of $M$ is $[1, 2^{64}-1]$ wei (the full `uint64` range), realized when $q$ ranges over $[0, 2^{64}-1]$. Setting $M_{max} = q_{max} = 2^{64}-1$ and solving for $D$:
+$D$ is fully determined by the type constraint. The allowed range of $M$ is $[1, 2^{64})$ wei (the full `uint64` range), realized when $q$ ranges over $[0, 2^{64})$.
+
+Setting $M_{max} = q_{max} = 2^{64}-1$ and solving for $D$:
 
 $$
 \begin{align}
@@ -160,16 +162,16 @@ This new mechanism allows for validators to specify their desired minimum gas pr
 - The risk of pricing out legitimate users.
 - The trajectory of organic gas prices.
 
-While Avalanche Network Clients may suggest reference values, each validator chooses `min-price-target` independently. The default behavior SHOULD be to abstain.
+While Avalanche Network Clients MAY suggest reference values, each validator chooses `min-price-target` independently. The default behavior SHOULD be to abstain.
 
 ## Backwards Compatibility
 
 The changes proposed in this ACP require a network upgrade in order to take effect. Prior to its activation, the current minimum gas price of 1 wei continues to apply. Its activation should have minimal compatibility effects:
 
 - **Transaction formats**: Unchanged. Wallets and transaction signing are not impacted.
-- **User fees**: Activation does not change the effective minimum gas price — the initial value remains 1 wei, identical to the pre-activation behavior. The mechanism only enables future increases, which validators must explicitly vote in.
+- **User fees**: Activation does not change the effective minimum gas price — the initial value remains 1 wei, identical to the pre-activation behavior. The mechanism enables future increases, which validators must explicitly vote for.
 - **Tooling**: Any tooling parsing the RLP block bytes will need to update.
-- **Gas price estimation APIs**: `eth_gasPrice` and related APIs should respect the new dynamic minimum gas price floor.
+- **Gas price estimation APIs**: `eth_gasPrice` and related APIs will need to respect the new dynamic minimum gas price floor.
 
 ## Reference Implementation
 
